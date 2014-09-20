@@ -200,9 +200,6 @@ M.authenticate = function(credentials_loc, options)
 		id = attributes.id
 	}
 
-	--ngx.req.read_body()
-	--local post = ngx.req.get_post_args()
-
 	-- Check credentials using provided location
 	local res = ngx.location.capture(credentials_loc, {ctx = ngx.ctx})
 

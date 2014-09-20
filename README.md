@@ -13,14 +13,18 @@ First, create a Lua script for fetching credentials, for exemple 'credentials.lu
 ```lua
 local ngx = ngx
 local artifacts = ngx.ctx.artifacts
--- validate the id any way you want
+
+-- At this point, artifacts has the following keys : 
+-- id, method, host, port, resource, ts, nonce, hash, ext, app, dlg, mac
+-- Use what you want in order to find the key needed to check the MAC
+
 if not artifacts.id then
 	ngx.ctx.err = "Incorrect id"
 else
   -- account found? (do a database lookup here, instead)
   if artifacts.id == 'bertrand' then
-  	ngx.ctx.credentials = {key = "my_app_key", algorithm = "sha1", id = artifacts.id}
-		ngx.ctx.err = nil
+  	ngx.ctx.credentials = {key = "my_key", algorithm = "sha1", id = artifacts.id}
+	ngx.ctx.err = nil
   else 
     ngx.ctx.err = "Account not found"
   end
@@ -40,18 +44,19 @@ location /hawk/credentials {
   content_by_lua_file credentials.lua;
 }
 ```
-
+This location will be called with a ```location.capture``` in the module, as shown below.
 Then create the location you want to protect with Hawk authentication:
 
 ```
-location = /my/stuff {
+location = /my/protected/stuff {
+  # if you need the body, add : lua_need_request_body on;
   access_by_lua_file    access.lua;
-  # serve something here, for example:
+  # do something here, for example:
   content_by_lua_file   stuff.lua;
 }
 ```
 
-The authentication happens in the access.lua file, it could look like this:
+The authentication happens in the 'access.lua' file, it could look like this:
 
 ```lua
 local hawk = require 'resty.hawk'

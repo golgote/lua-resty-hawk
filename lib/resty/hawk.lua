@@ -175,6 +175,7 @@ M.authenticate = function(credentials_loc, options)
 	local now = ngx.time() + tonumber(timestamp_offset_sec)
 	local headers = ngx.req.get_headers()
 	local auth_header = headers['authorization']
+	local content_type = headers['content_type']
 	local attributes = parse_authorization_header(auth_header)
 
 	if not attributes or
@@ -224,7 +225,7 @@ M.authenticate = function(credentials_loc, options)
 		if not attributes['hash'] then
 			return exit(ngx.HTTP_UNAUTHORIZED, "Missing required payload hash")
 		end
-		local content_type = headers['content_type']
+		options['content_type'] = content_type
 		local hash = calculate_payload_hash(options['payload'], ngx.ctx.credentials['algorithm'], content_type)
 		if hash ~= attributes['hash'] then
 			return exit(ngx.HTTP_UNAUTHORIZED, "Bad payload hash")

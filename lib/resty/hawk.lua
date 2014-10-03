@@ -204,16 +204,16 @@ M.authenticate = function(credentials_loc, options)
 	-- Check credentials using provided location
 	local res = ngx.location.capture(credentials_loc, {ctx = ngx.ctx})
 
-	if ngx.ctx.err then
-		return exit(ngx.HTTP_INTERNAL_SERVER_ERROR, ngx.ctx.err)
-	end
-
 	if not ngx.ctx.credentials then
 		return exit(ngx.HTTP_UNAUTHORIZED, "Unknown credentials")
 	end
 
 	if not ngx.ctx.credentials.key or not ngx.ctx.credentials.algorithm then
 		return exit(ngx.HTTP_INTERNAL_SERVER_ERROR, "Invalid credentials")
+	end
+
+	if ngx.ctx.err then
+		return exit(ngx.HTTP_INTERNAL_SERVER_ERROR, ngx.ctx.err)
 	end
 
 	local mac = calculate_mac('header', ngx.ctx.credentials, ngx.ctx.artifacts)

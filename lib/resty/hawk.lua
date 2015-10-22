@@ -103,7 +103,8 @@ local function parse_authorization_header(auth_header, allowable_keys)
 	local attributes = {}
 	local error_message = ""
 	local has_attributes = false
-	local allowable_chars = [=[^[%w=!#%$%%&'%(%)%*%+,%-%./:;<>%?@%^`{|}~%[%] ]+$]=]
+	-- Hawk specs allows !#$%&'()*+,-./:;<=>?@[]^_`{|}~ and space, a-z, A-Z, 0-9
+	local allowable_chars = [=[^[%w=!#%$%%&'%(%)%*%+,%-%./:;<>%?@%^_`{|}~%[%] ]+$]=]
 
 	string.gsub(auth_header, '^[Hh][Aa][Ww][Kk]%s+(.*)$', function(attribute_string)
 		string.gsub(attribute_string, '(%w+)="([^"]*)"', function(key, value)

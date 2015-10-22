@@ -103,16 +103,11 @@ local function parse_authorization_header(auth_header, allowable_keys)
 	local attributes = {}
 	local error_message = ""
 	local has_attributes = false
-	local allowable_chars = [=[^[%w=!#%$%%&'%(%)%*%+,%-%./:;<>%?@%^`{|}~%[%] ]+$]=]
 
 	string.gsub(auth_header, '^[Hh][Aa][Ww][Kk]%s+(.*)$', function(attribute_string)
 		string.gsub(attribute_string, '(%w+)="([^"]*)"', function(key, value)
 			if not allowable_keys[key] then
 				error_message = "Unknown attribute: " .. key
-				return
-			end
-			if not string.find(value, allowable_chars) then
-				error_message = "Bad attribute value: " .. key
 				return
 			end
 			if attributes[key] then

@@ -103,7 +103,7 @@ local function parse_authorization_header(auth_header, allowable_keys)
 	local attributes = {}
 	local error_message = ""
 	local has_attributes = false
-	local allowable_chars = [=[^[%w=!#%$%%&'%(%)%*%+,%-%./:;<>%?@%^`{|}~%[%] ]+$]=]
+	local allowable_chars = [=[^[ -~]+$]=] -- Only accept printable ASCII characters
 
 	string.gsub(auth_header, '^[Hh][Aa][Ww][Kk]%s+(.*)$', function(attribute_string)
 		string.gsub(attribute_string, '(%w+)="([^"]*)"', function(key, value)

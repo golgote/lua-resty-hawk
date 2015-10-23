@@ -70,6 +70,36 @@ hawk.authenticate('/hawk/credentials', options)
 
 Now, you are ready to accept HTTP requests authenticated by Hawk.
 
+Replay Protection / Nonce Checking
+----------------------------------
+
+To prevent replay attacks you can add nonce checking.  For example change access.lua:
+
+```lua
+local hawk = require 'resty.hawk'
+local nonce_ttl_sec = 60
+local options = { 
+	timestamp_skew_sec = 10,
+	nonce_func = function(nonce)
+		local success, err = ngx.shared.hawk_nonces:add(nonce, true, ngx.time() + nonce_ttl_sec)
+		return success or (err ~= 'exists')
+	end
+}
+
+hawk.authenticate('/hawk/credentials', options)
+```
+
+And configure the size of `hawk_nonces` in the `http` block in your nginx.conf:
+
+```
+http {
+    # Hawk nonce memory
+    lua_shared_dict hawk_nonces 100k;
+    
+    ...
+}
+```
+
 Limitations
 -----------
 

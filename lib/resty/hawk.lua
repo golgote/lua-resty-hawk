@@ -7,6 +7,9 @@ local M = {
 	_HEADER_VERSION = 1
 }
 
+local resty_hmac_sha256 = require "resty.hmac"
+local resty_sha256 = require "resty.sha256"
+
 local function escape_header(header)
 	return string.gsub(string.gsub(tostring(header), '\\', '\\\\'), '"', '\\"')
 end
@@ -41,6 +44,11 @@ local function calculate_payload_hash(payload, algorithm, content_type)
 	normalized = normalized .. "\n"
 	if algorithm == 'sha1' then
 		return ngx.encode_base64(ngx.sha1_bin(normalized))
+	elseif algorithm == 'sha256' then
+		local sha256 = resty_sha256:new()
+		sha256.update(normalized)
+		local digest = sha256:final()
+		return ngx.encode_base64(digest)
 	else
 		return exit(ngx.HTTP_INTERNAL_SERVER_ERROR, "Algorithm not implemented")
 	end
@@ -84,6 +92,10 @@ local function calculate_mac(mac_type, credentials, artifacts)
 	local normalized = generate_normalized_string(mac_type, artifacts)
 	if credentials.algorithm == 'sha1' then
 		digest = ngx.hmac_sha1(credentials.key, normalized)
+		return ngx.encode_base64(digest)
+	elseif credentials.algorithm == 'sha256' then
+		local hmac_sha256 = resty_hmac_sha256:new()
+		digest = hmac_sha256:digest("sha256", credentials.key, normalized, true)
 		return ngx.encode_base64(digest)
 	else
 		return exit(ngx.HTTP_INTERNAL_SERVER_ERROR, "Algorithm not implemented")
@@ -241,7 +253,15 @@ M.authenticate = function(credentials_loc, options)
 
 	if math.abs(tonumber(attributes['ts']) - tonumber(now)) > tonumber(timestamp_skew_sec) then
 		local now = ngx.time() + tonumber(timestamp_offset_sec)
-		local tsm = ngx.encode_base64(ngx.hmac_sha1(ngx.ctx.credentials['key'], 'hawk.' .. M._HEADER_VERSION .. ".ts\n" .. now .. "\n"))
+		if ngx.ctx.credentials.algorithm == 'sha1' then
+			local tsm = ngx.encode_base64(ngx.hmac_sha1(ngx.ctx.credentials['key'], 'hawk.' .. M._HEADER_VERSION .. ".ts\n" .. now .. "\n"))
+		elseif ngx.ctx.credentials.algorithm == 'sha256' then
+			local hmac_sha256 = resty_hmac_sha256:new()
+			local tsm = ngx.encode_base64(hmac_sha256:digest("sha256", ngx.ctx.credentials['key'], 'hawk.' .. M._HEADER_VERSION .. ".ts\n" .. now .. "\n", true))
+		else
+		    -- Technically impossible, we would have hit this already
+		    return exit(ngx.HTTP_INTERNAL_SERVER_ERROR, "Algorithm not implemented")
+		end
 		return exit(ngx.HTTP_UNAUTHORIZED, 'Stale timestamp', {ts = now, tsm = tsm})
 	end
 

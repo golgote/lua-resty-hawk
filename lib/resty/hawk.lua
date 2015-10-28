@@ -93,7 +93,7 @@ end
 local function parse_authorization_header(auth_header, allowable_keys)
 	local ngx = ngx
 	if not auth_header then
-		return exit(ngx.HTTP_FORBIDDEN, "No auth header")
+		return exit(ngx.HTTP_UNAUTHORIZED, "No auth header")
 	end
 
 	if not allowable_keys then
